@@ -26,7 +26,9 @@ class PackageTrackerPlugin(Plugin):
             'response_format': '{date} {time}: {status} @ {loc}',
             'response_format_noloc': '{date} {time}: {status}',
             'bmcargo_baseurl': 'http://erp-online.bmcargo.com/zz/estatus.aspx',
-            'bmcargo_pattern': r'^WR\d{2}-\d{9}$',
+            'bmcargo_pattern': r'^WR01-\d{9}$',
+            'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/Estatus.aspx',
+            'aeropaq_pattern': r'^WR2-\d{9}$',
         }
 
     def configure(self, config):
@@ -35,6 +37,12 @@ class PackageTrackerPlugin(Plugin):
                 'name': 'bmcargo',
                 'handler': self.handle_bmcargo,
                 'pattern': re.compile(config.get('bmcargo_pattern'),
+                                      flags=re.IGNORECASE)
+            },
+            {
+                'name': 'aeropaq',
+                'handler': self.handle_bmcargo,
+                'pattern': re.compile(config.get('aeropaq_pattern'),
                                       flags=re.IGNORECASE)
             }
         ]
@@ -48,7 +56,7 @@ class PackageTrackerPlugin(Plugin):
         pass
 
     def handle_bmcargo(self, update, *args, **kwargs):
-        base_url = self.config.get('bmcargo_baseurl')
+        base_url = self.config.get('bmcargo_baseurl','aeropaq_baseurl')
         _id = kwargs.get('id')
         params = {'id': _id}
         r = requests.get(base_url, params=params)
