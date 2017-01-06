@@ -162,7 +162,7 @@ class PackageTrackerPlugin(Plugin):
             responses.append("Parse error: {}".format(err))
 
         if len(responses) == 0:
-            update.message.reply_text("❌ Invalid tracking ID for PicknSend or no updates available at this time.")
+            update.message.reply_text("❌ Invalid tracking ID for PickNSend or no updates available at this time.")
         else:
             update.message.reply_text("\n".join(responses))
 
