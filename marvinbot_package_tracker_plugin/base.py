@@ -93,7 +93,8 @@ class PackageTrackerPlugin(Plugin):
             responses.append("Parse error: {}".format(err))
 
         if len(responses) == 0:
-            update.message.reply_text("❌ Invalid tracking ID for BMCargo or no updates available at this time.")
+            update.message.reply_text("❌ Invalid tracking ID for *BMCargo* or no updates available at this time.",
+                                     parse_mode="Markdown")
         else:
             update.message.reply_text("\n".join(responses))
 
@@ -127,7 +128,8 @@ class PackageTrackerPlugin(Plugin):
             responses.append("Parse error: {}".format(err))
 
         if len(responses) == 0:
-            update.message.reply_text("❌ Invalid tracking ID for Aeropaq or no updates available at this time.")
+            update.message.reply_text("❌ Invalid tracking ID for *Aeropaq* or no updates available at this time.",
+                                     parse_mode="Markdown")
         else:
             update.message.reply_text("\n".join(responses))
 
@@ -162,7 +164,8 @@ class PackageTrackerPlugin(Plugin):
             responses.append("Parse error: {}".format(err))
 
         if len(responses) == 0:
-            update.message.reply_text("❌ Invalid tracking ID for PickNSend or no updates available at this time.")
+            update.message.reply_text("❌ Invalid tracking ID for *PickNSend* or no updates available at this time.",
+                                     parse_mode="Markdown")
         else:
             update.message.reply_text("\n".join(responses))
 
