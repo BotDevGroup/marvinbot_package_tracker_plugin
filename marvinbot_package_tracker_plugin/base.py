@@ -29,7 +29,7 @@ class PackageTrackerPlugin(Plugin):
             'bmcargo_pattern': r'^WR01-\d{9}$',
             'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/estatus.aspx',
             'aeropaq_pattern': r'^WR02-\d{9}$',
-            'picknsend_baseurl': 'https://online.picknsend.com/zz/estatus.aspx',
+            'picknsend_baseurl': 'http://online.picknsend.com/zz/estatus.aspx',
             'picknsend_pattern': r'^WR13-\d{9}$',
         }
 
@@ -58,7 +58,7 @@ class PackageTrackerPlugin(Plugin):
 
     def setup_handlers(self, adapter):
         self.add_handler(CommandHandler('track', self.on_track_command, command_description='Allows the user to track couriers packages.')
-                         .add_argument('id', help='Tracking ID (e.g. WR01-001231234)'))
+                         .add_argument('id', help='Tracking ID (e.g. WR01-001231234).'))
 
     def setup_schedules(self, adapter):
         pass
@@ -69,7 +69,7 @@ class PackageTrackerPlugin(Plugin):
         params = {'id': _id}
         r = requests.get(base_url, params=params)
         if r.status_code != 200:
-            update.message.reply_text('❌ Unable to make the request')
+            update.message.reply_text('❌ Unable to make the request.')
             return
 
         soup = BeautifulSoup(r.text, 'html.parser')
@@ -93,7 +93,7 @@ class PackageTrackerPlugin(Plugin):
             responses.append("Parse error: {}".format(err))
 
         if len(responses) == 0:
-            update.message.reply_text("❌ Invalid tracking ID for BMCargo or no updates available at this time")
+            update.message.reply_text("❌ Invalid tracking ID for BMCargo or no updates available at this time.")
         else:
             update.message.reply_text("\n".join(responses))
 
@@ -103,7 +103,7 @@ class PackageTrackerPlugin(Plugin):
         params = {'id': _id}
         r = requests.get(base_url, params=params)
         if r.status_code != 200:
-            update.message.reply_text('❌ Unable to make the request')
+            update.message.reply_text('❌ Unable to make the request.')
             return
 
         soup = BeautifulSoup(r.text, 'html.parser')
@@ -127,17 +127,18 @@ class PackageTrackerPlugin(Plugin):
             responses.append("Parse error: {}".format(err))
 
         if len(responses) == 0:
-            update.message.reply_text("❌ Invalid tracking ID for Aeropaq or no updates available at this time")
+            update.message.reply_text("❌ Invalid tracking ID for Aeropaq or no updates available at this time.")
         else:
             update.message.reply_text("\n".join(responses))
-            
+
+
     def handle_picknsend(self, update, *args, **kwargs):
         base_url = self.config.get('picknsend_baseurl')
         _id = kwargs.get('id')
         params = {'id': _id}
         r = requests.get(base_url, params=params)
         if r.status_code != 200:
-            update.message.reply_text('❌ Unable to make the request')
+            update.message.reply_text('❌ Unable to make the request.')
             return
 
         soup = BeautifulSoup(r.text, 'html.parser')
@@ -161,9 +162,10 @@ class PackageTrackerPlugin(Plugin):
             responses.append("Parse error: {}".format(err))
 
         if len(responses) == 0:
-            update.message.reply_text("❌ Invalid tracking ID for PicknSend or no updates available at this time")
+            update.message.reply_text("❌ Invalid tracking ID for PicknSend or no updates available at this time.")
         else:
             update.message.reply_text("\n".join(responses))
+
 
     def on_track_command(self, update, *args, **kwargs):
         _id = kwargs.get('id')
