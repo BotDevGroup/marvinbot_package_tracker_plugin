@@ -30,7 +30,7 @@ class PackageTrackerPlugin(Plugin):
             'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/estatus.aspx',
             'aeropaq_pattern': r'^WR02-\d{9}$',
             'picknsend_baseurl': 'https://online.picknsend.com/zz/estatus.aspx',
-            'picknsend_baseurl': r'^WR13-\d{9}$',
+            'picknsend_pattern': r'^WR13-\d{9}$',
         }
 
     def configure(self, config):
