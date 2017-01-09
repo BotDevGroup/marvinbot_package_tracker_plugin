@@ -146,19 +146,14 @@ class PackageTrackerPlugin(Plugin):
         soup = BeautifulSoup(r.text, 'html.parser')
         responses = []
         try:
-            for td in soup.select("td[class=dxgv]"):
-                first_div, second_div = td.select("div")
-                status = first_div.select_one("span").contents[0]
-                date = second_div.contents[0].strip()
-                time = second_div.contents[2].strip()
-
-                if len(second_div.contents) >= 4:
-                    response_format = self.config.get('response_format')
-                    loc = second_div.contents[4].strip() if len(second_div.contents) >= 4 else 'Desconocido'
-                    response = response_format.format(status=status, date=date, time=time, loc=loc)
-                else:
-                    response_format = self.config.get('response_format_noloc')
-                    response = response_format.format(status=status, date=date, time=time)
+            labels = soup.select("td[class=dxgv] label")
+            label_pairs = [labels[i:i + 2] for i in range(0, len(labels), 2)]
+            for first_label, second_label in label_pairs:
+                status = first_label.contents[0]
+                st, loc, datetime = [x.strip() for x in second_label.contents[0].split(',')]
+                date, time = [x.strip() for x in datetime.split('|')]
+                response_format = self.config.get('response_format')
+                response = response_format.format(status=status, date=date, time=time, loc=loc)
                 responses.append(response)
         except Exception as err:
             responses.append("Parse error: {}".format(err))
