@@ -152,6 +152,7 @@ class PackageTrackerPlugin(Plugin):
                 status = first_label.contents[0]
                 st, loc, datetime = [x.strip() for x in second_label.contents[0].split(',')]
                 date, time = [x.strip() for x in datetime.split('|')]
+                loc = loc.upper()
                 response_format = self.config.get('response_format')
                 response = response_format.format(status=status, date=date, time=time, loc=loc)
                 responses.append(response)
