@@ -206,7 +206,7 @@ class PackageTrackerPlugin(Plugin):
         msg = update.message.reply_text("⌛ Parsing tracking number {}...".format(_id))
         handled = False
         message = {
-            "message_id": msg.id,
+            "message_id": msg.message_id,
             "chat_id": self.update.message.chat.id,
             "parse_mode": "Markdown"
         }
