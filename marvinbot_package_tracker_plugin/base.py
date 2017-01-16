@@ -202,24 +202,24 @@ class PackageTrackerPlugin(Plugin):
                                              text="❌ You can no longer subscribe to this package.")
 
     def on_track_command(self, update, *args, **kwargs):
-        _id = kwargs.get('id')
-        msg = update.message.reply_text("⌛ Parsing tracking number {}...".format(_id))
+        tracking_number = kwargs.get('id')
+        msg = update.message.reply_text("⌛ Parsing tracking number {}...".format(tracking_number))
         handled = False
         message = {
             "message_id": msg.message_id,
-            "chat_id": self.update.message.chat.id,
+            "chat_id": update.message.chat.id,
             "parse_mode": "Markdown"
         }
-        if not any([courier['pattern'].match(_id) for courier in self.couriers]):
+        if not any([courier['pattern'].match(tracking_number) for courier in self.couriers]):
             message["text"] = "❌ Given tracking number is not supported."
             self.adapter.bot.editMessageText(**message)
 
         for courier in self.couriers:
-            m = courier['pattern'].match(_id)
+            m = courier['pattern'].match(tracking_number)
             if not m:
                 continue
 
-            message["text"] = "⌛ Fetching updates from {} for {}...".format(courier['name'], _id)
+            message["text"] = "⌛ Fetching updates from {} for {}...".format(courier['name'], tracking_number)
             self.adapter.bot.editMessageText(**message)
 
             result, status = courier['handler'](tracking_number)
@@ -228,10 +228,10 @@ class PackageTrackerPlugin(Plugin):
                     message["text"] = "❌ Invalid tracking number for *{}* or no updates available at this time.".format(courier['name'])
                     self.adapter.bot.editMessageText(**message)
                 else:
-                    message["text"] = result
+                    message["text"] = "🔔 *Updates for {}:*\n\n{}".format(tracking_number, result)
                     self.adapter.bot.editMessageText(**message)
                     user_id = update.message.from_user.id
-                    self.subscribe(_id, user_id, True)
+                    self.subscribe(tracking_number, user_id, False)
             else:
                 message["text"] = "❌ Service is unavailable for {} at this time. Please try later.".format(courier['name'])
                 self.adapter.bot.editMessageText(**message)
@@ -286,7 +286,7 @@ def process_tracked_packages():
                     trackedPackage.num_errors = 0
                     trackedPackage.date_updated = localized_date()
                     trackedPackage.save()
-                    notify_subscribers(trackedPackage, "*Updates for {}:*\n\n{}".format(tracking_number, result))
+                    notify_subscribers(trackedPackage, "🔔 *Updates for {}:*\n\n{}".format(tracking_number, result))
                 else:
                     dtu = localized_date() - trackedPackage.date_updated if trackedPackage.date_updated is not None else None
                     if dtu is not None and (dtu.total_seconds() / (24 * 60 * 60)) >= plugin.config.get('max_days_stalled'):
