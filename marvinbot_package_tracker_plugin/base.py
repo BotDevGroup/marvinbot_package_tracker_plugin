@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 from marvinbot.utils import localized_date, get_message
-from marvinbot.handlers import CommandHandler
+from marvinbot.handlers import CommandHandler, CallbackQueryHandler
 from marvinbot.signals import plugin_reload
 from marvinbot.plugins import Plugin
 from marvinbot.models import User
 from marvinbot_package_tracker_plugin.models import TrackedPackage
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from bs4 import BeautifulSoup
 import logging
 import re
@@ -24,6 +25,7 @@ class PackageTrackerPlugin(Plugin):
         return {
             'short_name': self.name,
             'enabled': True,
+            'auto_subscribe': False,
             'process_interval': {"minutes": 15},
             'max_num_errors': 10,   # Max consecutive errors before deletion
             'max_days_stalled': 7,  # Max days without updates before deletion
@@ -63,6 +65,8 @@ class PackageTrackerPlugin(Plugin):
     def setup_handlers(self, adapter):
         self.add_handler(CommandHandler('track', self.on_track_command, command_description='Allows the user to track couriers packages.')
                          .add_argument('id', help='Tracking number (e.g. WR01-001231234).'))
+        self.add_handler(CallbackQueryHandler('{}:subscribe'.format(self.name), self.on_subscribe_button))
+        self.add_handler(CallbackQueryHandler('{}:unsubscribe'.format(self.name), self.on_unsubscribe_button))
 
     def setup_schedules(self, adapter):
         process_tracked_packages.plugin = self
@@ -186,12 +190,14 @@ class PackageTrackerPlugin(Plugin):
             tp.save()
             if notify:
                 do_notify()
+            return True
         elif tp.date_deleted is None:
             if user_id not in tp.subscribers:
                 tp.subscribers.append(user_id)
                 tp.save()
                 if notify:
                     do_notify()
+                return True
             else:
                 if notify:
                     self.adapter.bot.sendMessage(chat_id=user_id,
@@ -200,15 +206,59 @@ class PackageTrackerPlugin(Plugin):
             if notify:
                 self.adapter.bot.sendMessage(chat_id=user_id,
                                              text="❌ You can no longer subscribe to this package.")
+        return False
+
+    def unsubscribe(self, tracking_number, user_id, notify=False):
+        tp = TrackedPackage.by_tracking_number(tracking_number)
+        if tp is None or tp.date_deleted is not None:
+            if notify:
+                self.adapter.bot.sendMessage(chat_id=user_id,
+                                             text="❌ Tracked package does not exist or was deleted.")
+        else:
+            if user_id not in tp.subscribers:
+                if notify:
+                    self.adapter.bot.sendMessage(chat_id=user_id,
+                                                 text="❌ You are not subscribed to {}.".format(tracking_number))
+            else:
+                tp.subscribers = [subscriber for subscriber in tp.subscribers if subscriber != user_id]
+                tp.save()
+                if notify:
+                    self.adapter.bot.sendMessage(chat_id=user_id,
+                                                 text="🚮 You are now unsubscribed from receiving updates for {}.".format(tracking_number))
+                return True
+        return False
+
+    def on_unsubscribe_button(self, update, *args, **kwargs):
+        query = update.callback_query
+        tracking_number = query.data.split(":")[2]
+        user_id = query.from_user.id
+        unsubscribed = self.unsubscribe(tracking_number, user_id, False)
+        query.answer("Unsubscribed" if unsubscribed else "Failed")
+
+    def on_subscribe_button(self, update, *args, **kwargs):
+        query = update.callback_query
+        tracking_number = query.data.split(":")[2]
+        user_id = query.from_user.id
+        subscribed = self.subscribe(tracking_number, user_id, False)
+        query.answer("Subscribed" if subscribed else "Failed")
 
     def on_track_command(self, update, *args, **kwargs):
         tracking_number = kwargs.get('id')
         msg = update.message.reply_text("⌛ Parsing tracking number {}...".format(tracking_number))
         handled = False
+
+        # Build keyboard
+        buttons = [
+            {"text": "➕ Subscribe", "callback_data": "{}:subscribe:{}".format(self.name, tracking_number)},
+            {"text": "➖ Unsubscribe", "callback_data": "{}:unsubscribe:{}".format(self.name, tracking_number)},
+        ]
+        keyboard = [list(map(lambda btn: InlineKeyboardButton(**btn), buttons))]
+        reply_markup = InlineKeyboardMarkup(keyboard)
         message = {
             "message_id": msg.message_id,
             "chat_id": update.message.chat.id,
-            "parse_mode": "Markdown"
+            "parse_mode": "Markdown",
+            "reply_markup": reply_markup
         }
         if not any([courier['pattern'].match(tracking_number) for courier in self.couriers]):
             message["text"] = "❌ Given tracking number is not supported."
@@ -230,8 +280,9 @@ class PackageTrackerPlugin(Plugin):
                 else:
                     message["text"] = "🔔 *Updates for {}:*\n\n{}".format(tracking_number, result)
                     self.adapter.bot.editMessageText(**message)
-                    user_id = update.message.from_user.id
-                    self.subscribe(tracking_number, user_id, False)
+                    if self.config.get('auto_subscribe'):
+                        user_id = update.message.from_user.id
+                        self.subscribe(tracking_number, user_id, False)
             else:
                 message["text"] = "❌ Service is unavailable for {} at this time. Please try later.".format(courier['name'])
                 self.adapter.bot.editMessageText(**message)
@@ -249,13 +300,13 @@ def process_tracked_packages():
                                            parse_mode='Markdown')
 
     def process_tracked_package(trackedPackage):
-        log.info("Processing {}".format(trackedPackage.tracking_number))
         tracking_number = trackedPackage.tracking_number
         # If no subscribers, skip
         if len(trackedPackage.subscribers) == 0:
-            log.info('No subscribers for {}. Skipping'.format(tracking_number))
             return
         # Delete TrackedPackage and return if tracking number isn't valid
+        # What the... why didn't we store the courier in the 1st place?
+        # 'Cause reasons!
         if not any([courier['pattern'].match(tracking_number) for courier in plugin.couriers]):
             trackedPackage.date_deleted = localized_date()
             trackedPackage.save()
@@ -307,10 +358,7 @@ def process_tracked_packages():
 
             break
 
-    log.info("Processing tracked packages")
     tps = TrackedPackage.all()
-    log.info("Found {} tracked packages".format(tps.count()))
     for tp in tps:
         process_tracked_package(tp)
-    log.info("Done handling packages")
     adapter = process_tracked_packages.adapter
