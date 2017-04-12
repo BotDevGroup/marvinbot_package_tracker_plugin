@@ -35,6 +35,8 @@ class PackageTrackerPlugin(Plugin):
             'bmcargo_pattern': r'^WR01-\d{9}$',
             'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/estatus.aspx',
             'aeropaq_pattern': r'^WR02-\d{9}$',
+            'caripack_baseurl': 'http://erp-online.caripack.com/zz/estatus.aspx',
+            'caripack_pattern': r'^G02-\d{9}$',
             'picknsend_baseurl': 'http://online.picknsend.com/zz/estatus.aspx',
             'picknsend_pattern': r'^WR13-\d{9}$',
         }
@@ -51,6 +53,11 @@ class PackageTrackerPlugin(Plugin):
                 'name': 'Aeropaq',
                 'handler': self.handle_aeropaq,
                 'pattern': re.compile(config.get('aeropaq_pattern'),
+                                      flags=re.IGNORECASE)
+            },
+                'name': 'Caripack',
+                'handler': self.handle_caripack,
+                'pattern': re.compile(config.get('caripack_pattern'),
                                       flags=re.IGNORECASE)
             },
             {
@@ -106,6 +113,35 @@ class PackageTrackerPlugin(Plugin):
 
     def handle_aeropaq(self, tracking_number):
         base_url = self.config.get('aeropaq_baseurl')
+        params = {'id': tracking_number}
+        r = requests.get(base_url, params=params)
+        if r.status_code != 200:
+            return [None, r.status_code]
+
+        soup = BeautifulSoup(r.text, 'html.parser')
+        responses = []
+        try:
+            for td in soup.select("td[class=dxgv]"):
+                first_div, second_div = td.select("div")
+                status = first_div.select_one("span").contents[0]
+                date = second_div.contents[0].strip().replace('.', '-')
+                time = second_div.contents[2].strip().upper()
+
+                if len(second_div.contents) >= 4:
+                    response_format = self.config.get('response_format')
+                    loc = second_div.contents[4].strip() if len(second_div.contents) >= 4 else 'Desconocido'
+                    response = response_format.format(status=status, date=date, time=time, loc=loc)
+                else:
+                    response_format = self.config.get('response_format_noloc')
+                    response = response_format.format(status=status, date=date, time=time)
+                responses.append(response)
+        except Exception as err:
+            log.error("Parse error: {}".format(err))
+
+        return ["\n".join(responses), r.status_code]
+
+    def handle_caripack(self, tracking_number):
+        base_url = self.config.get('caripack_baseurl')
         params = {'id': tracking_number}
         r = requests.get(base_url, params=params)
         if r.status_code != 200:
