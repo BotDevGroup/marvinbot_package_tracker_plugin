@@ -55,6 +55,7 @@ class PackageTrackerPlugin(Plugin):
                 'pattern': re.compile(config.get('aeropaq_pattern'),
                                       flags=re.IGNORECASE)
             },
+            {
                 'name': 'Caripack',
                 'handler': self.handle_caripack,
                 'pattern': re.compile(config.get('caripack_pattern'),
