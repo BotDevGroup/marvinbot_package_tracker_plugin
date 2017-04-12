@@ -36,7 +36,7 @@ class PackageTrackerPlugin(Plugin):
             'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/estatus.aspx',
             'aeropaq_pattern': r'^WR02-\d{9}$',
             'caripack_baseurl': 'http://erp-online.caripack.com/zz/estatus.aspx',
-            'caripack_pattern': r'^G02-\d{9}$',
+            'caripack_pattern': r'^G02-\d{10}$',
             'picknsend_baseurl': 'http://online.picknsend.com/zz/estatus.aspx',
             'picknsend_pattern': r'^WR13-\d{9}$',
         }
