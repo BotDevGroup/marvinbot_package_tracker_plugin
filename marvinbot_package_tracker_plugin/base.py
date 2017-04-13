@@ -34,7 +34,7 @@ class PackageTrackerPlugin(Plugin):
             'bmcargo_baseurl': 'http://erp-online.bmcargo.com/zz/estatus.aspx',
             'bmcargo_pattern': r'^WR01-00\d{7}$',
             'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/estatus.aspx',
-            'aeropaq_pattern': r'^WR03-\d{9}$',
+            'aeropaq_pattern': r'^WR02-002\d{6}$',
             'caripack_baseurl': 'http://erp-online.caripack.com/zz/estatus.aspx',
             'caripack_pattern': r'^G02-\d{10}$',
             'liberty_baseurl': 'http://online.libertyexpress.com/zz/estatus.aspx',
@@ -42,7 +42,7 @@ class PackageTrackerPlugin(Plugin):
             'picknsend_baseurl': 'http://online.picknsend.com/zz/estatus.aspx',
             'picknsend_pattern': r'^WR13-\d{9}$',
             'taino_baseurl': 'http://erp-online.tainoexpress.com/zz/estatus.aspx',
-            'taino_pattern': r'^WR02-\d{9}$',
+            'taino_pattern': r'^WR02-0007\d{5}$',
         }
 
     def configure(self, config):
