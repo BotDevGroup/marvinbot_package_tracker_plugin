@@ -34,15 +34,13 @@ class PackageTrackerPlugin(Plugin):
             'bmcargo_baseurl': 'http://erp-online.bmcargo.com/zz/estatus.aspx',
             'bmcargo_pattern': r'^WR01-00\d{7}$',
             'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/estatus.aspx',
-            'aeropaq_pattern': r'^WR02-002\d{6}$',
+            'aeropaq_pattern': r'^WR02-\d{7}$',
             'caripack_baseurl': 'http://erp-online.caripack.com/zz/estatus.aspx',
             'caripack_pattern': r'^G02-\d{10}$',
             'liberty_baseurl': 'http://online.libertyexpress.com/zz/estatus.aspx',
             'liberty_pattern': r'^WR01-30\d{7}$',
             'picknsend_baseurl': 'http://online.picknsend.com/zz/estatus.aspx',
             'picknsend_pattern': r'^WR13-\d{9}$',
-            'taino_baseurl': 'http://erp-online.tainoexpress.com/zz/estatus.aspx',
-            'taino_pattern': r'^WR02-0007\d{5}$',
         }
 
     def configure(self, config):
@@ -75,12 +73,6 @@ class PackageTrackerPlugin(Plugin):
                 'name': 'PickN\'Send',
                 'handler': self.handle_picknsend,
                 'pattern': re.compile(config.get('picknsend_pattern'),
-                                      flags=re.IGNORECASE)
-            },
-            {
-                'name': 'Taino Express',
-                'handler': self.handle_taino,
-                'pattern': re.compile(config.get('taino_pattern'),
                                       flags=re.IGNORECASE)
             }
         ]
@@ -242,32 +234,6 @@ class PackageTrackerPlugin(Plugin):
 
         return ["\n".join(responses), r.status_code]
 
-    def handle_taino(self, tracking_number):
-        base_url = self.config.get('taino_baseurl')
-        params = {'id': tracking_number}
-        r = requests.get(base_url, params=params)
-        if r.status_code != 200:
-            return [None, r.status_code]
-
-        soup = BeautifulSoup(r.text, 'html.parser')
-        responses = []
-        try:
-            labels = soup.select("td[class=dxgv] label")
-            label_pairs = [labels[i:i + 2] for i in range(0, len(labels), 2)]
-            for first_label, second_label in label_pairs:
-                status = first_label.contents[0]
-                st, loc, datetime = [x.strip() for x in second_label.contents[0].split(',')]
-                date, time = [x.strip() for x in datetime.split('|')]
-                date = date.replace('.', '-')
-                time = time.upper()
-                loc = loc.upper()
-                response_format = self.config.get('response_format')
-                response = response_format.format(status=status, date=date, time=time, loc=loc)
-                responses.append(response)
-        except Exception as err:
-            log.error("Parse error: {}".format(err))
-
-        return ["\n".join(responses), r.status_code]
 
     @classmethod
     def add_tracked_package(cls, *args, **kwargs):
