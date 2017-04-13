@@ -32,13 +32,17 @@ class PackageTrackerPlugin(Plugin):
             'response_format': '{date} {time}: {status} @ {loc}',
             'response_format_noloc': '{date} {time}: {status}',
             'bmcargo_baseurl': 'http://erp-online.bmcargo.com/zz/estatus.aspx',
-            'bmcargo_pattern': r'^WR01-\d{9}$',
+            'bmcargo_pattern': r'^WR01-00\d{7}$',
             'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/estatus.aspx',
-            'aeropaq_pattern': r'^WR02-\d{9}$',
+            'aeropaq_pattern': r'^WR03-\d{9}$',
             'caripack_baseurl': 'http://erp-online.caripack.com/zz/estatus.aspx',
             'caripack_pattern': r'^G02-\d{10}$',
+            'liberty_baseurl': 'http://online.libertyexpress.com/zz/estatus.aspx',
+            'liberty_pattern': r'^WR01-30\d{7}$',
             'picknsend_baseurl': 'http://online.picknsend.com/zz/estatus.aspx',
             'picknsend_pattern': r'^WR13-\d{9}$',
+            'taino_baseurl': 'http://erp-online.tainoexpress.com/zz/estatus.aspx',
+            'taino_pattern': r'^WR02-\d{9}$',
         }
 
     def configure(self, config):
@@ -62,9 +66,21 @@ class PackageTrackerPlugin(Plugin):
                                       flags=re.IGNORECASE)
             },
             {
-                'name': 'PickNSend',
+                'name': 'liberty Express',
+                'handler': self.handle_liberty,
+                'pattern': re.compile(config.get('liberty_pattern'),
+                                      flags=re.IGNORECASE)
+            },
+            {
+                'name': 'PickN\'Send',
                 'handler': self.handle_picknsend,
                 'pattern': re.compile(config.get('picknsend_pattern'),
+                                      flags=re.IGNORECASE)
+            },
+            {
+                'name': 'Taino Express',
+                'handler': self.handle_taino,
+                'pattern': re.compile(config.get('taino_pattern'),
                                       flags=re.IGNORECASE)
             }
         ]
@@ -141,6 +157,35 @@ class PackageTrackerPlugin(Plugin):
 
         return ["\n".join(responses), r.status_code]
 
+    def handle_liberty(self, tracking_number):
+        base_url = self.config.get('liberty_baseurl')
+        params = {'id': tracking_number}
+        r = requests.get(base_url, params=params)
+        if r.status_code != 200:
+            return [None, r.status_code]
+
+        soup = BeautifulSoup(r.text, 'html.parser')
+        responses = []
+        try:
+            for td in soup.select("td[class=dxgv]"):
+                first_div, second_div = td.select("div")
+                status = first_div.select_one("span").contents[0]
+                date = second_div.contents[0].strip().replace('.', '-')
+                time = second_div.contents[2].strip().upper()
+
+                if len(second_div.contents) >= 4:
+                    response_format = self.config.get('response_format')
+                    loc = second_div.contents[4].strip() if len(second_div.contents) >= 4 else 'Desconocido'
+                    response = response_format.format(status=status, date=date, time=time, loc=loc)
+                else:
+                    response_format = self.config.get('response_format_noloc')
+                    response = response_format.format(status=status, date=date, time=time)
+                responses.append(response)
+        except Exception as err:
+            log.error("Parse error: {}".format(err))
+
+        return ["\n".join(responses), r.status_code]
+
     def handle_caripack(self, tracking_number):
         base_url = self.config.get('caripack_baseurl')
         params = {'id': tracking_number}
@@ -172,6 +217,33 @@ class PackageTrackerPlugin(Plugin):
 
     def handle_picknsend(self, tracking_number):
         base_url = self.config.get('picknsend_baseurl')
+        params = {'id': tracking_number}
+        r = requests.get(base_url, params=params)
+        if r.status_code != 200:
+            return [None, r.status_code]
+
+        soup = BeautifulSoup(r.text, 'html.parser')
+        responses = []
+        try:
+            labels = soup.select("td[class=dxgv] label")
+            label_pairs = [labels[i:i + 2] for i in range(0, len(labels), 2)]
+            for first_label, second_label in label_pairs:
+                status = first_label.contents[0]
+                st, loc, datetime = [x.strip() for x in second_label.contents[0].split(',')]
+                date, time = [x.strip() for x in datetime.split('|')]
+                date = date.replace('.', '-')
+                time = time.upper()
+                loc = loc.upper()
+                response_format = self.config.get('response_format')
+                response = response_format.format(status=status, date=date, time=time, loc=loc)
+                responses.append(response)
+        except Exception as err:
+            log.error("Parse error: {}".format(err))
+
+        return ["\n".join(responses), r.status_code]
+
+    def handle_taino(self, tracking_number):
+        base_url = self.config.get('taino_baseurl')
         params = {'id': tracking_number}
         r = requests.get(base_url, params=params)
         if r.status_code != 200:
