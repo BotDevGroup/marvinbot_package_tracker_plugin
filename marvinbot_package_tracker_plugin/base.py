@@ -64,7 +64,7 @@ class PackageTrackerPlugin(Plugin):
                                       flags=re.IGNORECASE)
             },
             {
-                'name': 'liberty Express',
+                'name': 'Liberty Express',
                 'handler': self.handle_liberty,
                 'pattern': re.compile(config.get('liberty_pattern'),
                                       flags=re.IGNORECASE)
