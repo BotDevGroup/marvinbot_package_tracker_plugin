@@ -42,7 +42,7 @@ class PackageTrackerPlugin(Plugin):
             'picknsend_baseurl': 'http://online.picknsend.com/zz/estatus.aspx',
             'picknsend_pattern': r'^WR13-\d{9}$',
             'domex_baseurl': 'https://domex-online.iplus.com.do/zz/estatus.aspx',
-            'domex_pattern': r'^WR01-006\d{6}$',
+            'domex_pattern': r'^WR01-000\d{6}$',
         }
 
     def configure(self, config):
