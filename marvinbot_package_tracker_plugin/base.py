@@ -32,7 +32,7 @@ class PackageTrackerPlugin(Plugin):
             'response_format': '{date} {time}: {status} @ {loc}',
             'response_format_noloc': '{date} {time}: {status}',
             'bmcargo_baseurl': 'http://erp-online.bmcargo.com/zz/estatus.aspx',
-            'bmcargo_pattern': r'^WR01-007\d{6}$',
+            'bmcargo_pattern': r'^WR01-008\d{6}$',
             'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/estatus.aspx',
             'aeropaq_pattern': r'^WR02-\d{7}$',
             'caripack_baseurl': 'http://erp-online.caripack.com/zz/estatus.aspx',
@@ -96,7 +96,7 @@ class PackageTrackerPlugin(Plugin):
         process_tracked_packages.plugin = self
         interval = self.config.get('process_interval')
         job = self.adapter.add_job(process_tracked_packages, 'interval', **interval,
-                                   id='process_tracked_packages', name='Fetches tracked packages for processing',
+                                   id='process_tracked_packages', name='Fetches tracked packages for processing.',
                                    replace_existing=True)
 
     def handle_bmcargo(self, tracking_number):
@@ -345,14 +345,14 @@ class PackageTrackerPlugin(Plugin):
         tracking_number = query.data.split(":")[2]
         user_id = query.from_user.id
         unsubscribed = self.unsubscribe(tracking_number, user_id, False)
-        query.answer("Unsubscribed" if unsubscribed else "Failed")
+        query.answer("Unsubscribed" if unsubscribed else "You're already unsubscribed!")
 
     def on_subscribe_button(self, update, *args, **kwargs):
         query = update.callback_query
         tracking_number = query.data.split(":")[2]
         user_id = query.from_user.id
         subscribed = self.subscribe(tracking_number, user_id, False)
-        query.answer("Subscribed" if subscribed else "Failed")
+        query.answer("Subscribed" if subscribed else "You're already subscribed!")
 
     def on_track_command(self, update, *args, **kwargs):
         tracking_number = kwargs.get('id')
