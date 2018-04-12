@@ -32,7 +32,7 @@ class PackageTrackerPlugin(Plugin):
             'response_format': '{date} {time}: {status} @ {loc}',
             'response_format_noloc': '{date} {time}: {status}',
             'bmcargo_baseurl': 'http://erp-online.bmcargo.com/zz/estatus.aspx',
-            'bmcargo_pattern': r'^WR01-008\d{6}$',
+            'bmcargo_pattern': r'^WR01-009\d{6}$',
             'aeropaq_baseurl': 'http://erp-online.aeropaq.com/zz/estatus.aspx',
             'aeropaq_pattern': r'^WR02-\d{7}$',
             'caripack_baseurl': 'http://erp-online.caripack.com/zz/estatus.aspx',
